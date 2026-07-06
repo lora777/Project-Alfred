@@ -29,8 +29,8 @@ export default function Home() {
               count={cameras.length}
             />
             <div className="grid gap-4 md:grid-cols-2">
-              {cameras.map((camera, index) => (
-                <CameraCard key={camera.id} camera={camera} index={index} />
+              {cameras.map((camera) => (
+                <CameraCard key={camera.id} camera={camera} />
               ))}
             </div>
 

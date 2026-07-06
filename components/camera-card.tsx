@@ -3,7 +3,7 @@ import type { Camera } from "@/data/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
-export function CameraCard({ camera, index }: { camera: Camera; index: number }) {
+export function CameraCard({ camera }: { camera: Camera }) {
   const isOnline = camera.status === "online";
   const isThreat = camera.lastDetected === "coyote";
 
@@ -16,7 +16,7 @@ export function CameraCard({ camera, index }: { camera: Camera; index: number })
             <h3 className="text-sm font-semibold text-zinc-100">{camera.name}</h3>
           </div>
           <p className="mt-1 font-mono text-[9px] uppercase tracking-wider text-zinc-600">
-            CAM-{String(index + 1).padStart(2, "0")} / {camera.location}
+            {camera.code} / {camera.location}
           </p>
         </div>
         <Badge
@@ -36,22 +36,33 @@ export function CameraCard({ camera, index }: { camera: Camera; index: number })
       </div>
 
       <div className="camera-feed relative aspect-[16/9] overflow-hidden bg-[#080909]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_56%_45%,rgba(82,92,85,0.16),transparent_35%),linear-gradient(135deg,rgba(39,43,41,0.45),transparent_50%)]" />
-        <div className="absolute left-[18%] top-[22%] h-[44%] w-[36%] border border-zinc-600/30 bg-zinc-800/10" />
-        <div className="absolute bottom-[16%] right-[10%] h-[25%] w-[32%] rounded-full bg-zinc-800/20 blur-sm" />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(${camera.feed.focalPoint}, rgba(82,92,85,0.16), transparent 35%), linear-gradient(135deg, rgba(39,43,41,0.45), transparent 50%)`,
+          }}
+        />
+        <div
+          className={`absolute border border-zinc-600/30 bg-zinc-800/10 ${camera.feed.detectionZone}`}
+        />
+        <div
+          className={`absolute rounded-full bg-zinc-800/20 blur-sm ${camera.feed.activityRegion}`}
+        />
         <div className="absolute inset-0 grid place-items-center">
           <div className="flex flex-col items-center gap-2 text-zinc-700 transition-colors group-hover:text-zinc-600">
             <Radio className="h-7 w-7" strokeWidth={1} />
             <span className="font-mono text-[9px] uppercase tracking-[0.2em]">
-              Live encrypted feed
+              {camera.stream.stateLabel}
             </span>
           </div>
         </div>
-        <div className="absolute left-3 top-3 flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest text-zinc-500">
-          <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> REC
-        </div>
+        {camera.recording && (
+          <div className="absolute left-3 top-3 flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest text-zinc-500">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> REC
+          </div>
+        )}
         <div className="absolute right-3 top-3 font-mono text-[9px] text-zinc-600">
-          1080P / IR
+          {camera.stream.resolution} / {camera.stream.mode}
         </div>
         <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between font-mono text-[9px] text-zinc-600">
           <span>{camera.timestamp.split(", ").at(-1)}</span>

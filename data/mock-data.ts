@@ -2,9 +2,21 @@ export type DetectionLabel = "coyote" | "Bruce" | "raccoon" | "unknown animal";
 
 export type Camera = {
   id: string;
+  code: string;
   name: string;
   location: string;
   status: "online" | "offline";
+  recording: boolean;
+  stream: {
+    stateLabel: string;
+    resolution: "720P" | "1080P" | "4K";
+    mode: "COLOR" | "IR";
+  };
+  feed: {
+    focalPoint: string;
+    detectionZone: string;
+    activityRegion: string;
+  };
   lastDetected: DetectionLabel;
   confidence: number;
   timestamp: string;
@@ -23,9 +35,21 @@ export type DetectionEvent = {
 export const cameras: Camera[] = [
   {
     id: "cam-01",
+    code: "CAM-01",
     name: "Front Porch",
     location: "North entrance",
     status: "online",
+    recording: true,
+    stream: {
+      stateLabel: "Live encrypted feed",
+      resolution: "1080P",
+      mode: "IR",
+    },
+    feed: {
+      focalPoint: "circle_at_56%_45%",
+      detectionZone: "left-[18%] top-[22%] h-[44%] w-[36%]",
+      activityRegion: "bottom-[16%] right-[10%] h-[25%] w-[32%]",
+    },
     lastDetected: "coyote",
     confidence: 97.4,
     timestamp: "Today, 02:41:18 AM",
@@ -33,9 +57,21 @@ export const cameras: Camera[] = [
   },
   {
     id: "cam-02",
+    code: "CAM-02",
     name: "Backyard",
     location: "West perimeter",
     status: "online",
+    recording: true,
+    stream: {
+      stateLabel: "Live encrypted feed",
+      resolution: "4K",
+      mode: "COLOR",
+    },
+    feed: {
+      focalPoint: "circle_at_38%_52%",
+      detectionZone: "right-[14%] top-[18%] h-[48%] w-[42%]",
+      activityRegion: "bottom-[12%] left-[8%] h-[30%] w-[38%]",
+    },
     lastDetected: "Bruce",
     confidence: 99.1,
     timestamp: "Yesterday, 11:17:04 PM",
