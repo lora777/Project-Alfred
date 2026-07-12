@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 
 export function CameraCard({ camera }: { camera: Camera }) {
   const isOnline = camera.status === "online";
-  const isThreat = camera.lastDetected === "coyote";
+  const isThreat = camera.lastDetected.label.toLowerCase() === "coyote";
 
   return (
     <Card className="group overflow-hidden transition-colors hover:border-zinc-700">
@@ -39,20 +39,20 @@ export function CameraCard({ camera }: { camera: Camera }) {
         <div
           className="absolute inset-0"
           style={{
-            background: `radial-gradient(${camera.feed.focalPoint}, rgba(82,92,85,0.16), transparent 35%), linear-gradient(135deg, rgba(39,43,41,0.45), transparent 50%)`,
+            background: `radial-gradient(${camera.feedVisual.focalPoint}, rgba(82,92,85,0.16), transparent 35%), linear-gradient(135deg, rgba(39,43,41,0.45), transparent 50%)`,
           }}
         />
         <div
-          className={`absolute border border-zinc-600/30 bg-zinc-800/10 ${camera.feed.detectionZone}`}
+          className={`absolute border border-zinc-600/30 bg-zinc-800/10 ${camera.feedVisual.detectionZone}`}
         />
         <div
-          className={`absolute rounded-full bg-zinc-800/20 blur-sm ${camera.feed.activityRegion}`}
+          className={`absolute rounded-full bg-zinc-800/20 blur-sm ${camera.feedVisual.activityRegion}`}
         />
         <div className="absolute inset-0 grid place-items-center">
           <div className="flex flex-col items-center gap-2 text-zinc-700 transition-colors group-hover:text-zinc-600">
             <Radio className="h-7 w-7" strokeWidth={1} />
             <span className="font-mono text-[9px] uppercase tracking-[0.2em]">
-              {camera.stream.stateLabel}
+              {camera.feedLabel}
             </span>
           </div>
         </div>
@@ -62,12 +62,12 @@ export function CameraCard({ camera }: { camera: Camera }) {
           </div>
         )}
         <div className="absolute right-3 top-3 font-mono text-[9px] text-zinc-600">
-          {camera.stream.resolution} / {camera.stream.mode}
+          {camera.qualityLabel}
         </div>
         <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between font-mono text-[9px] text-zinc-600">
-          <span>{camera.timestamp.split(", ").at(-1)}</span>
+          <span>{camera.currentTimeLabel}</span>
           <span className="flex items-center gap-1">
-            <Signal className="h-3 w-3" /> {camera.signal}%
+            <Signal className="h-3 w-3" /> {camera.signalStrength}%
           </span>
         </div>
       </div>
@@ -83,15 +83,15 @@ export function CameraCard({ camera }: { camera: Camera }) {
                 isThreat ? "text-red-400" : "text-zinc-200"
               }`}
             >
-              {camera.lastDetected}
+              {camera.lastDetected.label}
             </span>
             <span className="font-mono text-[10px] text-zinc-600">
-              {camera.confidence.toFixed(1)}% confidence
+              {camera.lastDetected.confidence.toFixed(1)}% confidence
             </span>
           </div>
         </div>
         <p className="max-w-[90px] text-right font-mono text-[9px] leading-4 text-zinc-600">
-          {camera.timestamp}
+          {camera.lastDetected.timestampLabel}
         </p>
       </div>
     </Card>

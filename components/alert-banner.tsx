@@ -1,8 +1,8 @@
 import { AlertTriangle, ArrowRight } from "lucide-react";
-import { activeAlert } from "@/data/mock-data";
+import type { ActiveAlert } from "@/data/mock-data";
 import { Button } from "@/components/ui/button";
 
-export function AlertBanner() {
+export function AlertBanner({ activeAlert }: { activeAlert: ActiveAlert }) {
   if (!activeAlert.active) return null;
 
   return (

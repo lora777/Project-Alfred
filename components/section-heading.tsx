@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
 export function SectionHeading({
@@ -5,11 +6,13 @@ export function SectionHeading({
   eyebrow,
   title,
   count,
+  action,
 }: {
   icon: LucideIcon;
   eyebrow: string;
   title: string;
   count?: number;
+  action?: ReactNode;
 }) {
   return (
     <div className="mb-4 flex items-end justify-between">
@@ -21,11 +24,14 @@ export function SectionHeading({
           {title}
         </h2>
       </div>
-      {typeof count === "number" && (
-        <span className="font-mono text-[10px] text-zinc-600">
-          {String(count).padStart(2, "0")} ITEMS
-        </span>
-      )}
+      <div className="flex items-center gap-3">
+        {typeof count === "number" && (
+          <span className="font-mono text-[10px] text-zinc-600">
+            {String(count).padStart(2, "0")} ITEMS
+          </span>
+        )}
+        {action}
+      </div>
     </div>
   );
 }

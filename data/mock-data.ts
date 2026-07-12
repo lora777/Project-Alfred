@@ -1,135 +1,172 @@
-export type DetectionLabel = "coyote" | "Bruce" | "raccoon" | "unknown animal";
-
 export type Camera = {
   id: string;
-  code: string;
   name: string;
   location: string;
+  code: string;
   status: "online" | "offline";
-  recording: boolean;
-  stream: {
-    stateLabel: string;
-    resolution: "720P" | "1080P" | "4K";
-    mode: "COLOR" | "IR";
+  feedLabel: string;
+  qualityLabel: string;
+  currentTimeLabel: string;
+  signalStrength: number;
+  lastDetected: {
+    label: string;
+    confidence: number;
+    timestampLabel: string;
   };
-  feed: {
+  recording: boolean;
+  feedVisual: {
     focalPoint: string;
     detectionZone: string;
     activityRegion: string;
   };
-  lastDetected: DetectionLabel;
-  confidence: number;
-  timestamp: string;
-  signal: number;
 };
 
 export type DetectionEvent = {
   id: string;
-  label: DetectionLabel;
-  camera: string;
+  label: string;
+  cameraName: string;
   confidence: number;
-  timestamp: string;
-  needsReview?: boolean;
+  timeLabel: string;
+  severity: "threat" | "safe" | "neutral" | "unknown";
+};
+
+export type CreateDetectionEventInput = Omit<DetectionEvent, "id">;
+
+export type ReviewQueueItem = {
+  id: string;
+  title: string;
+  cameraName: string;
+  timestampLabel: string;
+  suggestedLabels: string[];
+};
+
+export type DashboardStats = {
+  eventsToday: number;
+  storageLabel: string;
+  threatStateLabel: "Active" | "Clear";
+};
+
+export type ActiveAlert = {
+  active: boolean;
+  label: string;
+  camera: string;
+  detectedAt: string;
+};
+
+export type DashboardData = {
+  cameras: Camera[];
+  detectionEvents: DetectionEvent[];
+  reviewQueue: ReviewQueueItem[];
+  dashboardStats: DashboardStats;
+  activeAlert: ActiveAlert;
 };
 
 export const cameras: Camera[] = [
   {
     id: "cam-01",
-    code: "CAM-01",
     name: "Front Porch",
     location: "North entrance",
+    code: "CAM-01",
     status: "online",
-    recording: true,
-    stream: {
-      stateLabel: "Live encrypted feed",
-      resolution: "1080P",
-      mode: "IR",
+    feedLabel: "Live encrypted feed",
+    qualityLabel: "1080P / IR",
+    currentTimeLabel: "02:41:18 AM",
+    signalStrength: 92,
+    lastDetected: {
+      label: "coyote",
+      confidence: 97.4,
+      timestampLabel: "Today, 02:41:18 AM",
     },
-    feed: {
+    recording: true,
+    feedVisual: {
       focalPoint: "circle_at_56%_45%",
       detectionZone: "left-[18%] top-[22%] h-[44%] w-[36%]",
       activityRegion: "bottom-[16%] right-[10%] h-[25%] w-[32%]",
     },
-    lastDetected: "coyote",
-    confidence: 97.4,
-    timestamp: "Today, 02:41:18 AM",
-    signal: 92,
   },
   {
     id: "cam-02",
-    code: "CAM-02",
     name: "Backyard",
     location: "West perimeter",
+    code: "CAM-02",
     status: "online",
-    recording: true,
-    stream: {
-      stateLabel: "Live encrypted feed",
-      resolution: "4K",
-      mode: "COLOR",
+    feedLabel: "Live encrypted feed",
+    qualityLabel: "4K / COLOR",
+    currentTimeLabel: "11:17:04 PM",
+    signalStrength: 86,
+    lastDetected: {
+      label: "Bruce",
+      confidence: 99.1,
+      timestampLabel: "Yesterday, 11:17:04 PM",
     },
-    feed: {
+    recording: true,
+    feedVisual: {
       focalPoint: "circle_at_38%_52%",
       detectionZone: "right-[14%] top-[18%] h-[48%] w-[42%]",
       activityRegion: "bottom-[12%] left-[8%] h-[30%] w-[38%]",
     },
-    lastDetected: "Bruce",
-    confidence: 99.1,
-    timestamp: "Yesterday, 11:17:04 PM",
-    signal: 86,
   },
 ];
 
-export const recentEvents: DetectionEvent[] = [
+export const detectionEvents: DetectionEvent[] = [
   {
     id: "EVT-2048",
     label: "coyote",
-    camera: "Front Porch",
+    cameraName: "Front Porch",
     confidence: 97.4,
-    timestamp: "02:41 AM",
+    timeLabel: "02:41 AM",
+    severity: "threat",
   },
   {
     id: "EVT-2047",
     label: "Bruce",
-    camera: "Backyard",
+    cameraName: "Backyard",
     confidence: 99.1,
-    timestamp: "11:17 PM",
+    timeLabel: "11:17 PM",
+    severity: "safe",
   },
   {
     id: "EVT-2046",
     label: "raccoon",
-    camera: "Backyard",
+    cameraName: "Backyard",
     confidence: 88.6,
-    timestamp: "10:52 PM",
+    timeLabel: "10:52 PM",
+    severity: "neutral",
   },
   {
     id: "EVT-2045",
     label: "unknown animal",
-    camera: "Front Porch",
+    cameraName: "Front Porch",
     confidence: 61.2,
-    timestamp: "09:38 PM",
+    timeLabel: "09:38 PM",
+    severity: "unknown",
   },
 ];
 
-export const reviewQueue: DetectionEvent[] = [
+export const reviewQueue: ReviewQueueItem[] = [
   {
     id: "EVT-2044",
-    label: "unknown animal",
-    camera: "Backyard",
-    confidence: 73.8,
-    timestamp: "Yesterday, 08:14 PM",
-    needsReview: true,
+    title: "Unverified motion #1",
+    cameraName: "Backyard",
+    timestampLabel: "Yesterday, 08:14 PM",
+    suggestedLabels: ["Bruce", "Coyote", "Raccoon", "Unknown"],
   },
   {
     id: "EVT-2043",
-    label: "unknown animal",
-    camera: "Front Porch",
-    confidence: 68.5,
-    timestamp: "Yesterday, 07:46 PM",
-    needsReview: true,
+    title: "Unverified motion #2",
+    cameraName: "Front Porch",
+    timestampLabel: "Yesterday, 07:46 PM",
+    suggestedLabels: ["Bruce", "Coyote", "Raccoon", "Unknown"],
   },
 ];
 
-export const activeAlert = {
+export const dashboardStats: DashboardStats = {
+  eventsToday: 12,
+  storageLabel: "82%",
+  threatStateLabel: "Active",
+};
+
+export const activeAlert: ActiveAlert = {
   active: true,
   label: "Coyote",
   camera: "Front Porch",

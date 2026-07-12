@@ -23,3 +23,7 @@ pnpm-debug.log*
 *.pem
 *.tsbuildinfo
 next-env.d.ts
+
+# local app data
+/data/*.db
+/data/*.db-*
