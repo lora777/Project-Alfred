@@ -21,6 +21,11 @@ export type Camera = {
   };
 };
 
+export type CameraConfigurationInput = Pick<
+  Camera,
+  "name" | "location" | "code" | "status" | "qualityLabel" | "recording"
+>;
+
 export type DetectionEvent = {
   id: string;
   label: string;

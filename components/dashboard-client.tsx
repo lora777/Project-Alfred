@@ -1,14 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Grid2X2 } from "lucide-react";
+import { Grid2X2, Settings2 } from "lucide-react";
 import type { DashboardData, DetectionEvent, EventStatus } from "@/data/mock-data";
 import { AlertBanner } from "@/components/alert-banner";
 import { CameraCard } from "@/components/camera-card";
+import { CameraManager } from "@/components/camera-manager";
 import { EventFeed } from "@/components/event-feed";
 import { EventHistory } from "@/components/event-history";
 import { ReviewQueue } from "@/components/review-queue";
 import { SectionHeading } from "@/components/section-heading";
+import { Button } from "@/components/ui/button";
 import {
   SiteHeader,
   type DashboardView,
@@ -18,6 +20,7 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+  const [isCameraManagerOpen, setIsCameraManagerOpen] = useState(false);
   const [pendingEventUpdates, setPendingEventUpdates] = useState<
     Record<string, EventStatus>
   >({});
@@ -304,6 +307,17 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
                 eyebrow="Live surveillance"
                 title="Camera network"
                 count={cameras.length}
+                action={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsCameraManagerOpen(true)}
+                  >
+                    <Settings2 className="mr-2 h-3.5 w-3.5" />
+                    Manage
+                  </Button>
+                }
               />
               <div className="grid gap-4 md:grid-cols-2">
                 {cameras.map((camera) => (
@@ -370,6 +384,14 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
           <span>Alfred monitoring node / residential perimeter</span>
           <span>Local processing enabled · Data encrypted</span>
         </footer>
+
+        {isCameraManagerOpen && dashboardData && (
+          <CameraManager
+            cameras={cameras}
+            onSaved={loadDashboardData}
+            onClose={() => setIsCameraManagerOpen(false)}
+          />
+        )}
       </div>
     </main>
   );

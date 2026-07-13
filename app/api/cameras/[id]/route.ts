@@ -1,15 +1,14 @@
-import { createCamera, getCameras } from "@/lib/dashboard-data";
+import { updateCamera } from "@/lib/dashboard-data";
 import { CameraCodeConflictError } from "@/lib/cameras-db";
 import { parseCameraConfigurationInput } from "@/lib/camera-input";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export function GET() {
-  return Response.json(getCameras());
-}
-
-export async function POST(request: Request) {
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   let body: unknown;
 
   try {
@@ -27,8 +26,16 @@ export async function POST(request: Request) {
     return Response.json({ error: result.error }, { status: 400 });
   }
 
+  const { id } = await params;
+
   try {
-    return Response.json(createCamera(result.data), { status: 201 });
+    const camera = updateCamera(id, result.data);
+
+    if (!camera) {
+      return Response.json({ error: `Camera ${id} was not found` }, { status: 404 });
+    }
+
+    return Response.json(camera);
   } catch (error) {
     if (error instanceof CameraCodeConflictError) {
       return Response.json({ error: error.message }, { status: 409 });

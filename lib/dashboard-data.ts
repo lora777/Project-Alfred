@@ -1,4 +1,5 @@
 import {
+  type CameraConfigurationInput,
   type CreateDetectionEventInput,
   type DashboardData,
   type DashboardStats,
@@ -6,7 +7,11 @@ import {
   type EventStatus,
   type ReviewQueueItem,
 } from "@/data/mock-data";
-import { getStoredCameras } from "@/lib/cameras-db";
+import {
+  createStoredCamera,
+  getStoredCameras,
+  updateStoredCamera,
+} from "@/lib/cameras-db";
 import {
   createStoredDetectionEvent,
   getFilteredStoredDetectionEvents,
@@ -21,6 +26,14 @@ import {
 
 export function getCameras() {
   return getStoredCameras();
+}
+
+export function createCamera(input: CameraConfigurationInput) {
+  return createStoredCamera(input);
+}
+
+export function updateCamera(id: string, input: CameraConfigurationInput) {
+  return updateStoredCamera(id, input);
 }
 
 export function getDetectionEvents(filters: DetectionEventFilters = {}) {
