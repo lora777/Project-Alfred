@@ -1,5 +1,5 @@
-import { Clock3, Footprints, Plus } from "lucide-react";
-import type { DetectionEvent } from "@/data/mock-data";
+import { Check, Clock3, Footprints, Plus, X } from "lucide-react";
+import type { DetectionEvent, EventStatus } from "@/data/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SectionHeading } from "@/components/section-heading";
@@ -15,10 +15,14 @@ export function EventFeed({
   events,
   isCreatingEvent,
   onCreateEvent,
+  pendingUpdates,
+  onUpdateStatus,
 }: {
   events: DetectionEvent[];
   isCreatingEvent?: boolean;
   onCreateEvent?: () => void;
+  pendingUpdates?: Record<string, EventStatus>;
+  onUpdateStatus?: (event: DetectionEvent, status: EventStatus) => void;
 }) {
   return (
     <section>
@@ -66,9 +70,37 @@ export function EventFeed({
                 confidence
               </p>
             </div>
-            <time className="font-mono text-[10px] text-zinc-500">
-              {event.timeLabel}
-            </time>
+            <div className="text-right">
+              <time className="font-mono text-[10px] text-zinc-500">
+                {event.timeLabel}
+              </time>
+              {onUpdateStatus && (
+                <div className="mt-2 flex justify-end gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onUpdateStatus(event, "reviewed")}
+                    disabled={Boolean(pendingUpdates?.[event.id]) || event.status === "reviewed"}
+                  >
+                    <Check className="mr-1.5 h-3 w-3" />
+                    {pendingUpdates?.[event.id] === "reviewed"
+                      ? "Saving"
+                      : event.status === "reviewed"
+                        ? "Reviewed"
+                        : "Mark reviewed"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onUpdateStatus(event, "dismissed")}
+                    disabled={Boolean(pendingUpdates?.[event.id])}
+                  >
+                    <X className="mr-1.5 h-3 w-3" />
+                    {pendingUpdates?.[event.id] === "dismissed" ? "Saving" : "Dismiss"}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </Card>

@@ -1,40 +1,85 @@
 import {
-  activeAlert,
-  cameras,
-  dashboardStats,
-  detectionEvents,
-  reviewQueue,
   type CreateDetectionEventInput,
   type DashboardData,
+  type DashboardStats,
+  type EventStatus,
+  type ReviewQueueItem,
 } from "@/data/mock-data";
+import { getStoredCameras } from "@/lib/cameras-db";
 import {
   createStoredDetectionEvent,
+  getStoredDetectionEventStats,
   getStoredDetectionEvents,
+  updateStoredDetectionEventStatus,
 } from "@/lib/detection-events-db";
+import {
+  ensureStoredEventSnapshots,
+  getStoredEventMedia,
+} from "@/lib/event-media-db";
 
 export function getCameras() {
-  return cameras;
+  return getStoredCameras();
 }
 
-export function getDetectionEvents() {
-  return getStoredDetectionEvents();
+export function getDetectionEvents(includeDismissed = false) {
+  return getStoredDetectionEvents(includeDismissed);
 }
 
 export function getReviewQueue() {
-  return reviewQueue;
+  ensureStoredEventSnapshots();
+
+  return getStoredDetectionEvents()
+    .filter((event) => event.status === "new")
+    .map(
+      (event): ReviewQueueItem => {
+        const snapshot = getStoredEventMedia(event.id, "snapshot");
+        const clip = getStoredEventMedia(event.id, "clip");
+
+        return {
+          id: event.id,
+          title: `${event.label} detection`,
+          cameraName: event.cameraName,
+          timestampLabel: event.timeLabel,
+          confidence: event.confidence,
+          suggestedLabels: ["Cat", "Coyote", "Raccoon", "Unknown"],
+          snapshotUrl: snapshot
+            ? `/api/events/${encodeURIComponent(event.id)}/media/snapshot`
+            : null,
+          clipUrl: clip
+            ? `/api/events/${encodeURIComponent(event.id)}/media/clip`
+            : null,
+          clipDurationSeconds: clip?.durationSeconds ?? null,
+        };
+      },
+    );
 }
 
-export function getDashboardStats() {
-  const storedEvents = getStoredDetectionEvents();
+export function getDashboardStats(): DashboardStats {
+  const stats = getStoredDetectionEventStats();
 
   return {
-    ...dashboardStats,
-    eventsToday: dashboardStats.eventsToday + storedEvents.length - detectionEvents.length,
+    eventsToday: stats.eventsToday,
+    pendingReview: stats.pendingReview,
+    threatStateLabel: stats.activeThreats > 0 ? "Active" : "Clear",
   };
 }
 
 export function getActiveAlert() {
-  return activeAlert;
+  const event = getStoredDetectionEvents().find(
+    (candidate) =>
+      candidate.status === "new" && candidate.severity === "threat",
+  );
+
+  if (!event) {
+    return null;
+  }
+
+  return {
+    active: true,
+    label: event.label,
+    camera: event.cameraName,
+    detectedAt: event.timeLabel,
+  };
 }
 
 export function getDashboardData(): DashboardData {
@@ -51,4 +96,12 @@ export function createDetectionEvent(
   input: CreateDetectionEventInput,
 ) {
   return createStoredDetectionEvent(input);
+}
+
+export function updateDetectionEventStatus(
+  id: string,
+  status: EventStatus,
+  reviewedLabel?: string,
+) {
+  return updateStoredDetectionEventStatus(id, status, reviewedLabel);
 }

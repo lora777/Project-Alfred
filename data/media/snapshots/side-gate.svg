@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
+  <defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#111827"/><stop offset="1" stop-color="#27342e"/></linearGradient></defs>
+  <rect width="1280" height="720" fill="url(#sky)"/><rect y="480" width="1280" height="240" fill="#17231b"/>
+  <rect x="70" y="145" width="390" height="575" fill="#191e1b"/><path d="M810 225v495M1130 225v495M810 235h320M810 325h320M810 415h320M810 505h320" stroke="#4d5751" stroke-width="13"/>
+  <path d="M460 520h350" stroke="#656f68" stroke-width="8"/><ellipse cx="670" cy="585" rx="70" ry="34" fill="#29312c"/><circle cx="723" cy="559" r="28" fill="#303934"/><circle cx="734" cy="553" r="4" fill="#d6b56d"/>
+  <rect x="32" y="28" width="230" height="42" rx="5" fill="#050706" fill-opacity=".75"/><text x="52" y="56" fill="#d1d5db" font-family="monospace" font-size="19">CAM-04 / SIDE GATE</text>
+  <text x="1040" y="56" fill="#ef4444" font-family="monospace" font-size="18">● REC</text>
+</svg>

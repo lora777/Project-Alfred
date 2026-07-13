@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Grid2X2 } from "lucide-react";
-import type { DashboardData } from "@/data/mock-data";
+import type { DashboardData, DetectionEvent, EventStatus } from "@/data/mock-data";
 import { AlertBanner } from "@/components/alert-banner";
 import { CameraCard } from "@/components/camera-card";
 import { EventFeed } from "@/components/event-feed";
@@ -14,6 +14,10 @@ export function DashboardClient() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+  const [pendingEventUpdates, setPendingEventUpdates] = useState<
+    Record<string, EventStatus>
+  >({});
+  const pendingEventIds = useRef(new Set<string>());
 
   const loadDashboardData = useCallback(async () => {
     try {
@@ -74,6 +78,168 @@ export function DashboardClient() {
     }
   }
 
+  async function handleUpdateEventStatus(
+    event: DetectionEvent,
+    status: EventStatus,
+    reviewedLabel?: string,
+  ) {
+    if (pendingEventIds.current.has(event.id)) {
+      return;
+    }
+
+    pendingEventIds.current.add(event.id);
+    setPendingEventUpdates((current) => ({ ...current, [event.id]: status }));
+    setError(null);
+
+    const previousIndex =
+      dashboardData?.detectionEvents.findIndex(({ id }) => id === event.id) ?? -1;
+    const previousQueueIndex =
+      dashboardData?.reviewQueue.findIndex(({ id }) => id === event.id) ?? -1;
+    const previousQueueItem = dashboardData?.reviewQueue.find(
+      ({ id }) => id === event.id,
+    );
+
+    setDashboardData((current) => {
+      if (!current) return current;
+
+      return {
+        ...current,
+        detectionEvents:
+          status === "dismissed"
+            ? current.detectionEvents.filter(({ id }) => id !== event.id)
+            : current.detectionEvents.map((currentEvent) =>
+                currentEvent.id === event.id
+                  ? { ...currentEvent, status }
+                  : currentEvent,
+              ),
+        reviewQueue: current.reviewQueue.filter(({ id }) => id !== event.id),
+        dashboardStats: {
+          ...current.dashboardStats,
+          pendingReview: Math.max(
+            0,
+            current.dashboardStats.pendingReview - (previousQueueItem ? 1 : 0),
+          ),
+        },
+      };
+    });
+
+    try {
+      const response = await fetch(`/api/events/${encodeURIComponent(event.id)}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status, reviewedLabel }),
+      });
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(body?.error ?? `Event API returned ${response.status}`);
+      }
+
+      const updatedEvent = (await response.json()) as DetectionEvent;
+
+      if (status !== "dismissed") {
+        setDashboardData((current) =>
+          current
+            ? {
+                ...current,
+                detectionEvents: current.detectionEvents.map((currentEvent) =>
+                  currentEvent.id === updatedEvent.id ? updatedEvent : currentEvent,
+                ),
+              }
+            : current,
+        );
+      }
+
+      await loadDashboardData();
+    } catch (caughtError) {
+      setDashboardData((current) => {
+        if (!current) return current;
+
+        const existingIndex = current.detectionEvents.findIndex(
+          ({ id }) => id === event.id,
+        );
+        const restoredEvents = [...current.detectionEvents];
+
+        if (existingIndex >= 0) {
+          restoredEvents[existingIndex] = event;
+        } else {
+          restoredEvents.splice(
+            Math.max(0, Math.min(previousIndex, restoredEvents.length)),
+            0,
+            event,
+          );
+        }
+
+        const restoredQueue = [...current.reviewQueue];
+
+        if (
+          previousQueueItem &&
+          !restoredQueue.some(({ id }) => id === previousQueueItem.id)
+        ) {
+          restoredQueue.splice(
+            Math.max(0, Math.min(previousQueueIndex, restoredQueue.length)),
+            0,
+            previousQueueItem,
+          );
+        }
+
+        return {
+          ...current,
+          detectionEvents: restoredEvents,
+          reviewQueue: restoredQueue,
+          dashboardStats: {
+            ...current.dashboardStats,
+            pendingReview: previousQueueItem
+              ? current.dashboardStats.pendingReview + 1
+              : current.dashboardStats.pendingReview,
+          },
+        };
+      });
+      setError(
+        caughtError instanceof Error
+          ? `Unable to update ${event.id}: ${caughtError.message}`
+          : `Unable to update ${event.id}`,
+      );
+    } finally {
+      pendingEventIds.current.delete(event.id);
+      setPendingEventUpdates((current) => {
+        const next = { ...current };
+        delete next[event.id];
+        return next;
+      });
+    }
+  }
+
+  async function handleClassifyReviewItem(id: string, label: string) {
+    const event = dashboardData?.detectionEvents.find(
+      (candidate) => candidate.id === id,
+    );
+
+    if (!event) {
+      setError(`Unable to review ${id}: event was not found in the dashboard`);
+      return;
+    }
+
+    await handleUpdateEventStatus(event, "reviewed", label.toLowerCase());
+  }
+
+  async function handleDismissReviewItem(id: string) {
+    const event = dashboardData?.detectionEvents.find(
+      (candidate) => candidate.id === id,
+    );
+
+    if (!event) {
+      setError(`Unable to dismiss ${id}: event was not found in the dashboard`);
+      return;
+    }
+
+    await handleUpdateEventStatus(event, "dismissed");
+  }
+
   const cameras = dashboardData?.cameras ?? [];
   const dashboardStats = dashboardData?.dashboardStats;
   const activeAlert = dashboardData?.activeAlert;
@@ -87,7 +253,10 @@ export function DashboardClient() {
           value: `${cameras.filter((camera) => camera.status === "online").length}/${cameras.length}`,
         },
         { label: "Events today", value: String(dashboardStats.eventsToday) },
-        { label: "Storage", value: dashboardStats.storageLabel },
+        {
+          label: "Pending review",
+          value: String(dashboardStats.pendingReview),
+        },
         { label: "Threat state", value: dashboardStats.threatStateLabel },
       ]
     : [];
@@ -159,8 +328,15 @@ export function DashboardClient() {
                 events={detectionEvents}
                 isCreatingEvent={isCreatingEvent}
                 onCreateEvent={handleCreateEvent}
+                pendingUpdates={pendingEventUpdates}
+                onUpdateStatus={handleUpdateEventStatus}
               />
-              <ReviewQueue items={reviewQueue} />
+              <ReviewQueue
+                items={reviewQueue}
+                pendingUpdates={pendingEventUpdates}
+                onClassify={handleClassifyReviewItem}
+                onDismiss={handleDismissReviewItem}
+              />
             </aside>
           </div>
         )}

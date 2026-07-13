@@ -7,8 +7,11 @@ import type { CreateDetectionEventInput, DetectionEvent } from "@/data/mock-data
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export function GET() {
-  return Response.json(getDetectionEvents());
+export function GET(request: Request) {
+  const includeDismissed =
+    new URL(request.url).searchParams.get("includeDismissed") === "true";
+
+  return Response.json(getDetectionEvents(includeDismissed));
 }
 
 function isDetectionSeverity(value: unknown): value is DetectionEvent["severity"] {
@@ -39,7 +42,13 @@ function isCreateDetectionEventInput(
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as unknown;
+  let body: unknown;
+
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ error: "Malformed JSON request body" }, { status: 400 });
+  }
 
   if (!isCreateDetectionEventInput(body)) {
     return Response.json(

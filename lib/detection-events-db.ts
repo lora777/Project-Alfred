@@ -4,6 +4,7 @@ import {
   detectionEvents,
   type CreateDetectionEventInput,
   type DetectionEvent,
+  type EventStatus,
 } from "@/data/mock-data";
 
 type DetectionEventRow = {
@@ -13,10 +14,13 @@ type DetectionEventRow = {
   confidence: number;
   time_label: string;
   severity: DetectionEvent["severity"];
+  status: EventStatus;
+  reviewed_label: string | null;
   created_at: string;
 };
 
-const databasePath = join(process.cwd(), "data", "alfred.db");
+const databasePath =
+  process.env.ALFRED_DATABASE_PATH ?? join(process.cwd(), "data", "alfred.db");
 
 const db = new Database(databasePath);
 
@@ -30,9 +34,27 @@ db.exec(`
     confidence REAL NOT NULL,
     time_label TEXT NOT NULL,
     severity TEXT NOT NULL CHECK (severity IN ('threat', 'safe', 'neutral', 'unknown')),
+    status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'reviewed', 'dismissed')),
+    reviewed_label TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 `);
+
+const eventColumns = db
+  .prepare("PRAGMA table_info(detection_events)")
+  .all() as Array<{ name: string }>;
+
+if (!eventColumns.some((column) => column.name === "status")) {
+  db.exec(`
+    ALTER TABLE detection_events
+    ADD COLUMN status TEXT NOT NULL DEFAULT 'new'
+      CHECK (status IN ('new', 'reviewed', 'dismissed'));
+  `);
+}
+
+if (!eventColumns.some((column) => column.name === "reviewed_label")) {
+  db.exec("ALTER TABLE detection_events ADD COLUMN reviewed_label TEXT;");
+}
 
 const countEvents = db
   .prepare("SELECT COUNT(*) AS count FROM detection_events")
@@ -46,7 +68,9 @@ if (countEvents.count === 0) {
       camera_name,
       confidence,
       time_label,
-      severity
+      severity,
+      status,
+      reviewed_label
     )
     VALUES (
       @id,
@@ -54,7 +78,9 @@ if (countEvents.count === 0) {
       @cameraName,
       @confidence,
       @timeLabel,
-      @severity
+      @severity,
+      @status,
+      @reviewedLabel
     )
   `);
 
@@ -75,6 +101,8 @@ function mapDetectionEvent(row: DetectionEventRow): DetectionEvent {
     confidence: row.confidence,
     timeLabel: row.time_label,
     severity: row.severity,
+    status: row.status,
+    reviewedLabel: row.reviewed_label,
   };
 }
 
@@ -96,7 +124,9 @@ function getNextEventId() {
   return `EVT-${currentNumber + 1}`;
 }
 
-export function getStoredDetectionEvents(): DetectionEvent[] {
+export function getStoredDetectionEvents(
+  includeDismissed = false,
+): DetectionEvent[] {
   const rows = db
     .prepare(
       `
@@ -107,8 +137,11 @@ export function getStoredDetectionEvents(): DetectionEvent[] {
           confidence,
           time_label,
           severity,
+          status,
+          reviewed_label,
           created_at
         FROM detection_events
+        ${includeDismissed ? "" : "WHERE status != 'dismissed'"}
         ORDER BY datetime(created_at) DESC, CAST(SUBSTR(id, 5) AS INTEGER) DESC
       `,
     )
@@ -123,6 +156,8 @@ export function createStoredDetectionEvent(
   const event: DetectionEvent = {
     ...input,
     id: getNextEventId(),
+    status: "new",
+    reviewedLabel: null,
   };
 
   db.prepare(
@@ -133,7 +168,9 @@ export function createStoredDetectionEvent(
         camera_name,
         confidence,
         time_label,
-        severity
+        severity,
+        status,
+        reviewed_label
       )
       VALUES (
         @id,
@@ -141,10 +178,94 @@ export function createStoredDetectionEvent(
         @cameraName,
         @confidence,
         @timeLabel,
-        @severity
+        @severity,
+        @status,
+        @reviewedLabel
       )
     `,
   ).run(event);
 
   return event;
+}
+
+export function updateStoredDetectionEventStatus(
+  id: string,
+  status: EventStatus,
+  reviewedLabel?: string,
+): DetectionEvent | null {
+  const result = db
+    .prepare(
+      `
+        UPDATE detection_events
+        SET
+          status = @status,
+          reviewed_label = CASE
+            WHEN @hasReviewedLabel = 1 THEN @reviewedLabel
+            ELSE reviewed_label
+          END
+        WHERE id = @id
+      `,
+    )
+    .run({
+      id,
+      status,
+      hasReviewedLabel: reviewedLabel === undefined ? 0 : 1,
+      reviewedLabel: reviewedLabel ?? null,
+    });
+
+  if (result.changes === 0) {
+    return null;
+  }
+
+  const row = db
+    .prepare(
+      `
+        SELECT
+          id,
+          label,
+          camera_name,
+          confidence,
+          time_label,
+          severity,
+          status,
+          reviewed_label,
+          created_at
+        FROM detection_events
+        WHERE id = ?
+      `,
+    )
+    .get(id) as DetectionEventRow;
+
+  return mapDetectionEvent(row);
+}
+
+export function getStoredDetectionEventStats() {
+  const row = db
+    .prepare(
+      `
+        SELECT
+          SUM(
+            CASE
+              WHEN date(created_at, 'localtime') = date('now', 'localtime') THEN 1
+              ELSE 0
+            END
+          ) AS events_today,
+          SUM(CASE WHEN status = 'new' THEN 1 ELSE 0 END) AS pending_review,
+          SUM(
+            CASE WHEN status = 'new' AND severity = 'threat' THEN 1 ELSE 0 END
+          ) AS active_threats
+        FROM detection_events
+      `,
+    )
+    .get() as {
+      events_today: number | null;
+      pending_review: number | null;
+      active_threats: number | null;
+    };
+
+  return {
+    eventsToday: row.events_today ?? 0,
+    pendingReview: row.pending_review ?? 0,
+    activeThreats: row.active_threats ?? 0,
+  };
 }

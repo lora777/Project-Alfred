@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
+  <defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#101621"/><stop offset="1" stop-color="#26312e"/></linearGradient></defs>
+  <rect width="1280" height="720" fill="url(#sky)"/><path d="M420 720L570 330h210l240 390z" fill="#303432"/><path d="M610 720l48-390M835 720L712 330" stroke="#6b716d" stroke-width="6" opacity=".45"/>
+  <path d="M0 520l250-170 230 170v200H0z" fill="#1c221f"/><rect x="140" y="500" width="220" height="160" fill="#151917"/>
+  <path d="M765 535h230l70 82H710z" fill="#202825"/><circle cx="780" cy="628" r="34" fill="#111514"/><circle cx="992" cy="628" r="34" fill="#111514"/>
+  <rect x="32" y="28" width="220" height="42" rx="5" fill="#050706" fill-opacity=".75"/><text x="52" y="56" fill="#d1d5db" font-family="monospace" font-size="19">CAM-03 / DRIVEWAY</text>
+  <text x="1040" y="56" fill="#ef4444" font-family="monospace" font-size="18">● REC</text>
+</svg>

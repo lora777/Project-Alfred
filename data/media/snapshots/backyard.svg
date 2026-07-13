@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
+  <defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#111827"/><stop offset="1" stop-color="#27362e"/></linearGradient></defs>
+  <rect width="1280" height="720" fill="url(#sky)"/><rect y="450" width="1280" height="270" fill="#16241a"/>
+  <path d="M0 500l210-150 180 150 230-180 250 180 180-125 230 125v220H0z" fill="#1e2c22"/>
+  <path d="M0 525h1280M0 590h1280" stroke="#58625b" stroke-width="7" opacity=".55"/><path d="M75 450v270M310 450v270M545 450v270M780 450v270M1015 450v270M1235 450v270" stroke="#3e4741" stroke-width="12"/>
+  <ellipse cx="765" cy="565" rx="72" ry="39" fill="#2b332e"/><circle cx="817" cy="535" r="29" fill="#303a33"/><circle cx="829" cy="529" r="4" fill="#d6b56d"/>
+  <rect x="32" y="28" width="220" height="42" rx="5" fill="#050706" fill-opacity=".75"/><text x="52" y="56" fill="#d1d5db" font-family="monospace" font-size="19">CAM-02 / BACKYARD</text>
+  <text x="1040" y="56" fill="#ef4444" font-family="monospace" font-size="18">● REC</text>
+</svg>
