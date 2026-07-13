@@ -6,11 +6,15 @@ import type { DashboardData, DetectionEvent, EventStatus } from "@/data/mock-dat
 import { AlertBanner } from "@/components/alert-banner";
 import { CameraCard } from "@/components/camera-card";
 import { EventFeed } from "@/components/event-feed";
+import { EventHistory } from "@/components/event-history";
 import { ReviewQueue } from "@/components/review-queue";
 import { SectionHeading } from "@/components/section-heading";
-import { SiteHeader } from "@/components/site-header";
+import {
+  SiteHeader,
+  type DashboardView,
+} from "@/components/site-header";
 
-export function DashboardClient() {
+export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
@@ -267,10 +271,15 @@ export function DashboardClient() {
       <div className="pointer-events-none fixed left-1/2 top-[-20rem] h-[38rem] w-[60rem] -translate-x-1/2 rounded-full bg-red-950/10 blur-[120px]" />
 
       <div className="relative mx-auto max-w-[1440px] px-4 py-6 sm:px-7 sm:py-8 lg:px-10">
-        <SiteHeader />
+        <SiteHeader
+          activeView={view}
+          pendingReview={dashboardStats?.pendingReview ?? 0}
+        />
 
-        <div className="mt-6">
-          {activeAlert && <AlertBanner activeAlert={activeAlert} />}
+        <div className={view === "live" ? "mt-6" : ""}>
+          {view === "live" && activeAlert && (
+            <AlertBanner activeAlert={activeAlert} />
+          )}
         </div>
 
         {error && (
@@ -286,8 +295,10 @@ export function DashboardClient() {
         )}
 
         {dashboardData && (
-          <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1fr)_380px]">
-            <section>
+          <>
+            {view === "live" && (
+            <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1fr)_380px]">
+              <section>
               <SectionHeading
                 icon={Grid2X2}
                 eyebrow="Live surveillance"
@@ -321,24 +332,38 @@ export function DashboardClient() {
                   </div>
                 ))}
               </div>
-            </section>
+              </section>
 
-            <aside className="grid content-start gap-8 lg:grid-cols-2 xl:grid-cols-1">
+              <aside className="grid content-start gap-8 lg:grid-cols-2 xl:grid-cols-1">
               <EventFeed
-                events={detectionEvents}
+                events={detectionEvents.slice(0, 5)}
                 isCreatingEvent={isCreatingEvent}
                 onCreateEvent={handleCreateEvent}
                 pendingUpdates={pendingEventUpdates}
                 onUpdateStatus={handleUpdateEventStatus}
               />
-              <ReviewQueue
-                items={reviewQueue}
-                pendingUpdates={pendingEventUpdates}
-                onClassify={handleClassifyReviewItem}
-                onDismiss={handleDismissReviewItem}
-              />
-            </aside>
-          </div>
+              </aside>
+            </div>
+            )}
+            {view === "review" && (
+              <div className="mx-auto mt-8 max-w-4xl">
+                <ReviewQueue
+                  items={reviewQueue}
+                  pendingUpdates={pendingEventUpdates}
+                  onClassify={handleClassifyReviewItem}
+                  onDismiss={handleDismissReviewItem}
+                />
+              </div>
+            )}
+            {view === "history" && (
+            <EventHistory
+              cameras={cameras}
+              refreshKey={detectionEvents
+                .map((event) => `${event.id}:${event.status}`)
+                .join("|")}
+            />
+            )}
+          </>
         )}
 
         <footer className="mt-10 flex flex-col gap-2 border-t border-zinc-900 pt-5 font-mono text-[9px] uppercase tracking-widest text-zinc-700 sm:flex-row sm:items-center sm:justify-between">

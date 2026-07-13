@@ -89,6 +89,14 @@ export function ReviewQueue({
             </div>
             );
           })}
+          {items.length === 0 && (
+            <div className="px-5 py-12 text-center">
+              <p className="text-sm font-medium text-zinc-400">Queue clear</p>
+              <p className="mt-2 text-xs text-zinc-600">
+                New uncertain or threat detections will appear here.
+              </p>
+            </div>
+          )}
         </Card>
       </section>
 

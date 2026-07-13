@@ -4,6 +4,7 @@ import {
   detectionEvents,
   type CreateDetectionEventInput,
   type DetectionEvent,
+  type DetectionEventFilters,
   type EventStatus,
 } from "@/data/mock-data";
 
@@ -70,7 +71,8 @@ if (countEvents.count === 0) {
       time_label,
       severity,
       status,
-      reviewed_label
+      reviewed_label,
+      created_at
     )
     VALUES (
       @id,
@@ -80,7 +82,8 @@ if (countEvents.count === 0) {
       @timeLabel,
       @severity,
       @status,
-      @reviewedLabel
+      @reviewedLabel,
+      @createdAt
     )
   `);
 
@@ -103,6 +106,7 @@ function mapDetectionEvent(row: DetectionEventRow): DetectionEvent {
     severity: row.severity,
     status: row.status,
     reviewedLabel: row.reviewed_label,
+    createdAt: row.created_at,
   };
 }
 
@@ -150,6 +154,63 @@ export function getStoredDetectionEvents(
   return rows.map(mapDetectionEvent);
 }
 
+export function getFilteredStoredDetectionEvents(
+  filters: DetectionEventFilters,
+): DetectionEvent[] {
+  const conditions: string[] = [];
+  const parameters: Record<string, string> = {};
+
+  if (!filters.includeDismissed) {
+    conditions.push("status != 'dismissed'");
+  }
+
+  if (filters.cameraName) {
+    conditions.push("camera_name = @cameraName");
+    parameters.cameraName = filters.cameraName;
+  }
+
+  if (filters.animal) {
+    conditions.push(
+      "(LOWER(label) = LOWER(@animal) OR LOWER(reviewed_label) = LOWER(@animal))",
+    );
+    parameters.animal = filters.animal;
+  }
+
+  if (filters.status) {
+    conditions.push("status = @status");
+    parameters.status = filters.status;
+  }
+
+  if (filters.date) {
+    conditions.push("date(created_at, 'localtime') = @date");
+    parameters.date = filters.date;
+  }
+
+  const whereClause =
+    conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const rows = db
+    .prepare(
+      `
+        SELECT
+          id,
+          label,
+          camera_name,
+          confidence,
+          time_label,
+          severity,
+          status,
+          reviewed_label,
+          created_at
+        FROM detection_events
+        ${whereClause}
+        ORDER BY datetime(created_at) DESC, CAST(SUBSTR(id, 5) AS INTEGER) DESC
+      `,
+    )
+    .all(parameters) as DetectionEventRow[];
+
+  return rows.map(mapDetectionEvent);
+}
+
 export function createStoredDetectionEvent(
   input: CreateDetectionEventInput,
 ): DetectionEvent {
@@ -158,6 +219,7 @@ export function createStoredDetectionEvent(
     id: getNextEventId(),
     status: "new",
     reviewedLabel: null,
+    createdAt: new Date().toISOString(),
   };
 
   db.prepare(
@@ -170,7 +232,8 @@ export function createStoredDetectionEvent(
         time_label,
         severity,
         status,
-        reviewed_label
+        reviewed_label,
+        created_at
       )
       VALUES (
         @id,
@@ -180,7 +243,8 @@ export function createStoredDetectionEvent(
         @timeLabel,
         @severity,
         @status,
-        @reviewedLabel
+        @reviewedLabel,
+        @createdAt
       )
     `,
   ).run(event);

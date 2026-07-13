@@ -2,12 +2,14 @@ import {
   type CreateDetectionEventInput,
   type DashboardData,
   type DashboardStats,
+  type DetectionEventFilters,
   type EventStatus,
   type ReviewQueueItem,
 } from "@/data/mock-data";
 import { getStoredCameras } from "@/lib/cameras-db";
 import {
   createStoredDetectionEvent,
+  getFilteredStoredDetectionEvents,
   getStoredDetectionEventStats,
   getStoredDetectionEvents,
   updateStoredDetectionEventStatus,
@@ -21,8 +23,8 @@ export function getCameras() {
   return getStoredCameras();
 }
 
-export function getDetectionEvents(includeDismissed = false) {
-  return getStoredDetectionEvents(includeDismissed);
+export function getDetectionEvents(filters: DetectionEventFilters = {}) {
+  return getFilteredStoredDetectionEvents(filters);
 }
 
 export function getReviewQueue() {

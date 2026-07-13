@@ -30,14 +30,23 @@ export type DetectionEvent = {
   severity: "threat" | "safe" | "neutral" | "unknown";
   status: EventStatus;
   reviewedLabel: string | null;
+  createdAt: string;
 };
 
 export type EventStatus = "new" | "reviewed" | "dismissed";
 
 export type CreateDetectionEventInput = Omit<
   DetectionEvent,
-  "id" | "status" | "reviewedLabel"
+  "id" | "status" | "reviewedLabel" | "createdAt"
 >;
+
+export type DetectionEventFilters = {
+  includeDismissed?: boolean;
+  cameraName?: string;
+  animal?: string;
+  status?: EventStatus;
+  date?: string;
+};
 
 export type ReviewQueueItem = {
   id: string;
@@ -173,6 +182,7 @@ export const detectionEvents: DetectionEvent[] = [
     severity: "threat",
     status: "new",
     reviewedLabel: null,
+    createdAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
   },
   {
     id: "EVT-2051",
@@ -183,6 +193,7 @@ export const detectionEvents: DetectionEvent[] = [
     severity: "neutral",
     status: "new",
     reviewedLabel: null,
+    createdAt: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
   },
   {
     id: "EVT-2050",
@@ -193,6 +204,7 @@ export const detectionEvents: DetectionEvent[] = [
     severity: "safe",
     status: "reviewed",
     reviewedLabel: "cat",
+    createdAt: new Date(Date.now() - 74 * 60 * 1000).toISOString(),
   },
   {
     id: "EVT-2049",
@@ -203,6 +215,7 @@ export const detectionEvents: DetectionEvent[] = [
     severity: "unknown",
     status: "new",
     reviewedLabel: null,
+    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: "EVT-2048",
@@ -213,6 +226,7 @@ export const detectionEvents: DetectionEvent[] = [
     severity: "neutral",
     status: "reviewed",
     reviewedLabel: "raccoon",
+    createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: "EVT-2047",
@@ -223,6 +237,7 @@ export const detectionEvents: DetectionEvent[] = [
     severity: "safe",
     status: "dismissed",
     reviewedLabel: null,
+    createdAt: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: "EVT-2046",
@@ -233,6 +248,7 @@ export const detectionEvents: DetectionEvent[] = [
     severity: "threat",
     status: "new",
     reviewedLabel: null,
+    createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: "EVT-2045",
@@ -243,5 +259,6 @@ export const detectionEvents: DetectionEvent[] = [
     severity: "unknown",
     status: "dismissed",
     reviewedLabel: null,
+    createdAt: new Date(Date.now() - 32 * 60 * 60 * 1000).toISOString(),
   },
 ];
