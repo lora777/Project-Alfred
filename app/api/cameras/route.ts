@@ -1,5 +1,8 @@
 import { createCamera, getCameras } from "@/lib/dashboard-data";
-import { CameraCodeConflictError } from "@/lib/cameras-db";
+import {
+  CameraCodeConflictError,
+  CameraSourceConfigurationError,
+} from "@/lib/cameras-db";
 import { parseCameraConfigurationInput } from "@/lib/camera-input";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +35,10 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof CameraCodeConflictError) {
       return Response.json({ error: error.message }, { status: 409 });
+    }
+
+    if (error instanceof CameraSourceConfigurationError) {
+      return Response.json({ error: error.message }, { status: 400 });
     }
 
     throw error;

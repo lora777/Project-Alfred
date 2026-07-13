@@ -6,6 +6,7 @@ import {
   LoaderCircle,
   Plus,
   Save,
+  Trash2,
   X,
 } from "lucide-react";
 import type {
@@ -35,6 +36,8 @@ function createEmptyForm(cameras: Camera[]): CameraConfigurationInput {
     status: "online",
     qualityLabel: "1080P / IR",
     recording: true,
+    sourceType: "simulated",
+    snapshotUrl: "",
   };
 }
 
@@ -46,32 +49,47 @@ function cameraToForm(camera: Camera): CameraConfigurationInput {
     status: camera.status,
     qualityLabel: camera.qualityLabel,
     recording: camera.recording,
+    sourceType: camera.sourceType,
+    snapshotUrl: "",
   };
 }
 
 export function CameraManager({
   cameras,
+  initialCameraId,
   onSaved,
   onClose,
 }: {
   cameras: Camera[];
+  initialCameraId?: string | null;
   onSaved: () => Promise<void>;
   onClose: () => void;
 }) {
-  const [selectedId, setSelectedId] = useState<"new" | string>("new");
+  const initialCamera = initialCameraId
+    ? cameras.find((camera) => camera.id === initialCameraId)
+    : undefined;
+  const [selectedId, setSelectedId] = useState<"new" | string>(
+    initialCamera?.id ?? "new",
+  );
   const [form, setForm] = useState<CameraConfigurationInput>(() =>
-    createEmptyForm(cameras),
+    initialCamera ? cameraToForm(initialCamera) : createEmptyForm(cameras),
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const selectedCamera = cameras.find((camera) => camera.id === selectedId);
+  const hasExistingHttpSource =
+    selectedCamera?.sourceType === "http_snapshot" &&
+    selectedCamera.sourceConfigured;
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && !isSaving) onClose();
+      if (event.key === "Escape" && !isSaving && !isDeleting) onClose();
     }
 
     window.addEventListener("keydown", handleKeyDown);
@@ -80,13 +98,14 @@ export function CameraManager({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isSaving, onClose]);
+  }, [isDeleting, isSaving, onClose]);
 
   function selectCamera(camera: Camera) {
     setSelectedId(camera.id);
     setForm(cameraToForm(camera));
     setError(null);
     setNotice(null);
+    setIsConfirmingDelete(false);
   }
 
   function selectNewCamera() {
@@ -94,6 +113,7 @@ export function CameraManager({
     setForm(createEmptyForm(cameras));
     setError(null);
     setNotice(null);
+    setIsConfirmingDelete(false);
   }
 
   function updateForm<Key extends keyof CameraConfigurationInput>(
@@ -152,11 +172,47 @@ export function CameraManager({
     }
   }
 
+  async function handleDelete() {
+    if (selectedId === "new" || isDeleting || isSaving) return;
+
+    setIsDeleting(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      const response = await fetch(
+        `/api/cameras/${encodeURIComponent(selectedId)}`,
+        { method: "DELETE" },
+      );
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(body?.error ?? `Camera API returned ${response.status}`);
+      }
+
+      await onSaved();
+      setSelectedId("new");
+      setForm(createEmptyForm(cameras.filter((camera) => camera.id !== selectedId)));
+      setIsConfirmingDelete(false);
+      setNotice("Camera deleted successfully");
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Unable to delete camera",
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/80 p-4 backdrop-blur-sm sm:p-6"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !isSaving) onClose();
+        if (event.target === event.currentTarget && !isSaving && !isDeleting) onClose();
       }}
     >
       <section
@@ -182,7 +238,7 @@ export function CameraManager({
             size="icon"
             aria-label="Close camera manager"
             onClick={onClose}
-            disabled={isSaving}
+            disabled={isSaving || isDeleting}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -301,6 +357,48 @@ export function CameraManager({
                   <option value="4K / COLOR">4K / Color</option>
                 </select>
               </label>
+              <label className="grid gap-1.5 sm:col-span-2">
+                <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-600">
+                  Snapshot source
+                </span>
+                <select
+                  className={fieldClassName}
+                  value={form.sourceType}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      sourceType: event.target.value as Camera["sourceType"],
+                      snapshotUrl: "",
+                    }))
+                  }
+                >
+                  <option value="simulated">Simulated snapshot</option>
+                  <option value="http_snapshot">HTTP snapshot URL</option>
+                </select>
+              </label>
+              {form.sourceType === "http_snapshot" && (
+                <label className="grid gap-1.5 sm:col-span-2">
+                  <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-600">
+                    Private snapshot URL
+                  </span>
+                  <input
+                    type="url"
+                    maxLength={2048}
+                    className={fieldClassName}
+                    value={form.snapshotUrl ?? ""}
+                    onChange={(event) => updateForm("snapshotUrl", event.target.value)}
+                    placeholder={
+                      hasExistingHttpSource
+                        ? "Configured - leave blank to keep the current URL"
+                        : "http://camera.local/snapshot.jpg"
+                    }
+                    required={!hasExistingHttpSource}
+                  />
+                  <span className="text-[10px] leading-4 text-zinc-600">
+                    Alfred fetches this address on the server. It is never returned by the camera API.
+                  </span>
+                </label>
+              )}
             </div>
 
             <label className="mt-5 flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950/70 px-4 py-3">
@@ -330,11 +428,60 @@ export function CameraManager({
               </div>
             )}
 
-            <div className="mt-6 flex justify-end gap-2 border-t border-zinc-800 pt-5">
-              <Button type="button" variant="ghost" onClick={onClose} disabled={isSaving}>
+            {isConfirmingDelete && selectedId !== "new" && (
+              <div className="mt-5 rounded-lg border border-red-900/60 bg-red-950/25 p-4">
+                <p className="text-xs font-semibold text-red-200">
+                  Delete this camera from the live network?
+                </p>
+                <p className="mt-1 text-[10px] text-red-300/70">
+                  Historical events will remain available.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsConfirmingDelete(false)}
+                    disabled={isDeleting}
+                  >
+                    Keep camera
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="danger"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <LoaderCircle className="mr-2 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="mr-2 h-3.5 w-3.5" />
+                    )}
+                    Confirm delete
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 flex items-center justify-between gap-2 border-t border-zinc-800 pt-5">
+              <div>
+                {selectedId !== "new" && !isConfirmingDelete && (
+                  <Button
+                    type="button"
+                    variant="danger"
+                    onClick={() => setIsConfirmingDelete(true)}
+                    disabled={isSaving || isDeleting}
+                  >
+                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-2">
+              <Button type="button" variant="ghost" onClick={onClose} disabled={isSaving || isDeleting}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSaving}>
+              <Button type="submit" disabled={isSaving || isDeleting}>
                 {isSaving ? (
                   <LoaderCircle className="mr-2 h-3.5 w-3.5 animate-spin" />
                 ) : (
@@ -342,6 +489,7 @@ export function CameraManager({
                 )}
                 {selectedId === "new" ? "Add camera" : "Save changes"}
               </Button>
+              </div>
             </div>
           </form>
         </div>

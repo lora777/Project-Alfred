@@ -5,6 +5,7 @@ import { Grid2X2, Settings2 } from "lucide-react";
 import type { DashboardData, DetectionEvent, EventStatus } from "@/data/mock-data";
 import { AlertBanner } from "@/components/alert-banner";
 import { CameraCard } from "@/components/camera-card";
+import { CameraDetailModal } from "@/components/camera-detail-modal";
 import { CameraManager } from "@/components/camera-manager";
 import { EventFeed } from "@/components/event-feed";
 import { EventHistory } from "@/components/event-history";
@@ -21,6 +22,8 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
   const [error, setError] = useState<string | null>(null);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [isCameraManagerOpen, setIsCameraManagerOpen] = useState(false);
+  const [cameraManagerInitialId, setCameraManagerInitialId] = useState<string | null>(null);
+  const [expandedCameraId, setExpandedCameraId] = useState<string | null>(null);
   const [pendingEventUpdates, setPendingEventUpdates] = useState<
     Record<string, EventStatus>
   >({});
@@ -248,6 +251,7 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
   }
 
   const cameras = dashboardData?.cameras ?? [];
+  const expandedCamera = cameras.find((camera) => camera.id === expandedCameraId);
   const dashboardStats = dashboardData?.dashboardStats;
   const activeAlert = dashboardData?.activeAlert;
   const detectionEvents = dashboardData?.detectionEvents ?? [];
@@ -312,7 +316,10 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setIsCameraManagerOpen(true)}
+                    onClick={() => {
+                      setCameraManagerInitialId(null);
+                      setIsCameraManagerOpen(true);
+                    }}
                   >
                     <Settings2 className="mr-2 h-3.5 w-3.5" />
                     Manage
@@ -321,7 +328,11 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
               />
               <div className="grid gap-4 md:grid-cols-2">
                 {cameras.map((camera) => (
-                  <CameraCard key={camera.id} camera={camera} />
+                  <CameraCard
+                    key={camera.id}
+                    camera={camera}
+                    onOpen={(selectedCamera) => setExpandedCameraId(selectedCamera.id)}
+                  />
                 ))}
               </div>
 
@@ -388,8 +399,26 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
         {isCameraManagerOpen && dashboardData && (
           <CameraManager
             cameras={cameras}
+            initialCameraId={cameraManagerInitialId}
             onSaved={loadDashboardData}
-            onClose={() => setIsCameraManagerOpen(false)}
+            onClose={() => {
+              setIsCameraManagerOpen(false);
+              setCameraManagerInitialId(null);
+            }}
+          />
+        )}
+
+        {expandedCamera && (
+          <CameraDetailModal
+            camera={expandedCamera}
+            onEdit={(camera) => {
+              setExpandedCameraId(null);
+              setCameraManagerInitialId(camera.id);
+              setIsCameraManagerOpen(true);
+            }}
+            onSnapshotCaptured={loadDashboardData}
+            onDeleted={loadDashboardData}
+            onClose={() => setExpandedCameraId(null)}
           />
         )}
       </div>

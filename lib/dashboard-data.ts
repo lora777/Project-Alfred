@@ -9,6 +9,7 @@ import {
 } from "@/data/mock-data";
 import {
   createStoredCamera,
+  deleteStoredCamera,
   getStoredCameras,
   updateStoredCamera,
 } from "@/lib/cameras-db";
@@ -34,6 +35,10 @@ export function createCamera(input: CameraConfigurationInput) {
 
 export function updateCamera(id: string, input: CameraConfigurationInput) {
   return updateStoredCamera(id, input);
+}
+
+export function deleteCamera(id: string) {
+  return deleteStoredCamera(id);
 }
 
 export function getDetectionEvents(filters: DetectionEventFilters = {}) {

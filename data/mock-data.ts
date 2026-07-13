@@ -1,3 +1,5 @@
+export type CameraSourceType = "simulated" | "http_snapshot";
+
 export type Camera = {
   id: string;
   name: string;
@@ -14,6 +16,10 @@ export type Camera = {
     timestampLabel: string;
   };
   recording: boolean;
+  sourceType: CameraSourceType;
+  sourceConfigured: boolean;
+  snapshotAvailable: boolean;
+  snapshotCapturedAt: string | null;
   feedVisual: {
     focalPoint: string;
     detectionZone: string;
@@ -24,7 +30,10 @@ export type Camera = {
 export type CameraConfigurationInput = Pick<
   Camera,
   "name" | "location" | "code" | "status" | "qualityLabel" | "recording"
->;
+> & {
+  sourceType: CameraSourceType;
+  snapshotUrl?: string;
+};
 
 export type DetectionEvent = {
   id: string;
@@ -103,6 +112,10 @@ export const cameras: Camera[] = [
       timestampLabel: "Today, 02:41:18 AM",
     },
     recording: true,
+    sourceType: "simulated",
+    sourceConfigured: true,
+    snapshotAvailable: false,
+    snapshotCapturedAt: null,
     feedVisual: {
       focalPoint: "circle_at_56%_45%",
       detectionZone: "left-[18%] top-[22%] h-[44%] w-[36%]",
@@ -125,6 +138,10 @@ export const cameras: Camera[] = [
       timestampLabel: "Yesterday, 11:17:04 PM",
     },
     recording: true,
+    sourceType: "simulated",
+    sourceConfigured: true,
+    snapshotAvailable: false,
+    snapshotCapturedAt: null,
     feedVisual: {
       focalPoint: "circle_at_38%_52%",
       detectionZone: "right-[14%] top-[18%] h-[48%] w-[42%]",
@@ -147,6 +164,10 @@ export const cameras: Camera[] = [
       timestampLabel: "Yesterday, 06:22:31 PM",
     },
     recording: true,
+    sourceType: "simulated",
+    sourceConfigured: true,
+    snapshotAvailable: false,
+    snapshotCapturedAt: null,
     feedVisual: {
       focalPoint: "circle_at_64%_48%",
       detectionZone: "left-[12%] top-[20%] h-[52%] w-[46%]",
@@ -169,6 +190,10 @@ export const cameras: Camera[] = [
       timestampLabel: "Today, 01:56:09 AM",
     },
     recording: false,
+    sourceType: "simulated",
+    sourceConfigured: true,
+    snapshotAvailable: false,
+    snapshotCapturedAt: null,
     feedVisual: {
       focalPoint: "circle_at_45%_42%",
       detectionZone: "right-[18%] top-[24%] h-[42%] w-[34%]",

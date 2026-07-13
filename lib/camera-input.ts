@@ -56,6 +56,34 @@ export function parseCameraConfigurationInput(value: unknown): CameraInputResult
     return { ok: false, error: "Recording must be true or false" };
   }
 
+  const sourceType = input.sourceType ?? "simulated";
+
+  if (sourceType !== "simulated" && sourceType !== "http_snapshot") {
+    return { ok: false, error: "Camera source must be simulated or HTTP snapshot" };
+  }
+
+  let snapshotUrl: string | undefined;
+
+  if (typeof input.snapshotUrl === "string" && input.snapshotUrl.trim()) {
+    snapshotUrl = input.snapshotUrl.trim();
+
+    if (snapshotUrl.length > 2048) {
+      return { ok: false, error: "Snapshot URL must be 2048 characters or fewer" };
+    }
+
+    try {
+      const url = new URL(snapshotUrl);
+
+      if (url.protocol !== "http:" && url.protocol !== "https:") {
+        return { ok: false, error: "Snapshot URL must use HTTP or HTTPS" };
+      }
+    } catch {
+      return { ok: false, error: "Snapshot URL must be a valid URL" };
+    }
+  } else if (input.snapshotUrl != null && typeof input.snapshotUrl !== "string") {
+    return { ok: false, error: "Snapshot URL must be a string" };
+  }
+
   return {
     ok: true,
     data: {
@@ -65,6 +93,8 @@ export function parseCameraConfigurationInput(value: unknown): CameraInputResult
       status: input.status,
       qualityLabel: input.qualityLabel.trim(),
       recording: input.recording,
+      sourceType,
+      snapshotUrl,
     },
   };
 }
