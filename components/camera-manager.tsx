@@ -33,9 +33,9 @@ function createEmptyForm(cameras: Camera[]): CameraConfigurationInput {
     name: "",
     location: "",
     code: suggestCameraCode(cameras),
-    status: "online",
+    status: "offline",
     qualityLabel: "1080P / IR",
-    recording: true,
+    recording: false,
     sourceType: "simulated",
     snapshotUrl: "",
   };
@@ -57,12 +57,16 @@ function cameraToForm(camera: Camera): CameraConfigurationInput {
 export function CameraManager({
   cameras,
   initialCameraId,
+  connectedCameraIds,
   onSaved,
+  onConnect,
   onClose,
 }: {
   cameras: Camera[];
   initialCameraId?: string | null;
+  connectedCameraIds: string[];
   onSaved: () => Promise<void>;
+  onConnect: (camera: Camera) => void;
   onClose: () => void;
 }) {
   const initialCamera = initialCameraId
@@ -80,6 +84,9 @@ export function CameraManager({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const selectedCamera = cameras.find((camera) => camera.id === selectedId);
+  const hasLiveBrowserStream = selectedCamera
+    ? connectedCameraIds.includes(selectedCamera.id)
+    : false;
   const hasExistingHttpSource =
     selectedCamera?.sourceType === "http_snapshot" &&
     selectedCamera.sourceConfigured;
@@ -416,6 +423,32 @@ export function CameraManager({
                 </span>
               </span>
             </label>
+
+            {selectedCamera && (
+              <div className="mt-5 flex flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-950/70 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-medium text-zinc-300">Live video source</p>
+                  <p className="mt-1 text-[10px] leading-4 text-zinc-600">
+                    {hasLiveBrowserStream
+                      ? "A browser camera is currently attached to this camera view."
+                      : "Attach an iPhone, webcam, or another browser-visible camera."}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant={hasLiveBrowserStream ? "outline" : "default"}
+                  onClick={() => onConnect(selectedCamera)}
+                  disabled={isSaving || isDeleting}
+                >
+                  <CameraIcon className="mr-2 h-3.5 w-3.5" />
+                  {hasLiveBrowserStream
+                    ? "Change source"
+                    : selectedCamera.status === "offline"
+                      ? "Reconnect camera"
+                      : "Connect live source"}
+                </Button>
+              </div>
+            )}
 
             {error && (
               <div className="mt-5 rounded-lg border border-red-900/60 bg-red-950/25 px-4 py-3 text-xs text-red-300">

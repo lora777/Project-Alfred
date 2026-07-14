@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, Grid2X2, Settings2 } from "lucide-react";
+import { Grid2X2, Settings2 } from "lucide-react";
 import type { DashboardData, DetectionEvent, EventStatus } from "@/data/mock-data";
 import { AlertBanner } from "@/components/alert-banner";
 import { CameraCard } from "@/components/camera-card";
@@ -357,28 +357,18 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
                 title="Camera network"
                 count={cameras.length}
                 action={
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => setBrowserCameraTarget({})}
-                    >
-                      <Camera className="mr-2 h-3.5 w-3.5" />
-                      Connect camera
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setCameraManagerInitialId(null);
-                        setIsCameraManagerOpen(true);
-                      }}
-                    >
-                      <Settings2 className="mr-2 h-3.5 w-3.5" />
-                      Manage
-                    </Button>
-                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCameraManagerInitialId(null);
+                      setIsCameraManagerOpen(true);
+                    }}
+                  >
+                    <Settings2 className="mr-2 h-3.5 w-3.5" />
+                    Manage
+                  </Button>
                 }
               />
               <div className="grid gap-4 md:grid-cols-2">
@@ -462,7 +452,13 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
           <CameraManager
             cameras={cameras}
             initialCameraId={cameraManagerInitialId}
+            connectedCameraIds={Object.keys(browserCameraStreams)}
             onSaved={loadDashboardData}
+            onConnect={(camera) => {
+              setIsCameraManagerOpen(false);
+              setCameraManagerInitialId(null);
+              setBrowserCameraTarget({ id: camera.id, name: camera.name });
+            }}
             onClose={() => {
               setIsCameraManagerOpen(false);
               setCameraManagerInitialId(null);
