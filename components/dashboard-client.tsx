@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Grid2X2, Settings2 } from "lucide-react";
+import { Camera, Grid2X2, Settings2 } from "lucide-react";
 import type { DashboardData, DetectionEvent, EventStatus } from "@/data/mock-data";
 import { AlertBanner } from "@/components/alert-banner";
 import { CameraCard } from "@/components/camera-card";
 import { CameraDetailModal } from "@/components/camera-detail-modal";
 import { CameraManager } from "@/components/camera-manager";
+import { BrowserCameraModal } from "@/components/browser-camera-modal";
 import { EventFeed } from "@/components/event-feed";
 import { EventHistory } from "@/components/event-history";
 import { ReviewQueue } from "@/components/review-queue";
@@ -22,6 +23,7 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
   const [error, setError] = useState<string | null>(null);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [isCameraManagerOpen, setIsCameraManagerOpen] = useState(false);
+  const [isBrowserCameraOpen, setIsBrowserCameraOpen] = useState(false);
   const [cameraManagerInitialId, setCameraManagerInitialId] = useState<string | null>(null);
   const [expandedCameraId, setExpandedCameraId] = useState<string | null>(null);
   const [pendingEventUpdates, setPendingEventUpdates] = useState<
@@ -312,18 +314,28 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
                 title="Camera network"
                 count={cameras.length}
                 action={
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setCameraManagerInitialId(null);
-                      setIsCameraManagerOpen(true);
-                    }}
-                  >
-                    <Settings2 className="mr-2 h-3.5 w-3.5" />
-                    Manage
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => setIsBrowserCameraOpen(true)}
+                    >
+                      <Camera className="mr-2 h-3.5 w-3.5" />
+                      Connect camera
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCameraManagerInitialId(null);
+                        setIsCameraManagerOpen(true);
+                      }}
+                    >
+                      <Settings2 className="mr-2 h-3.5 w-3.5" />
+                      Manage
+                    </Button>
+                  </div>
                 }
               />
               <div className="grid gap-4 md:grid-cols-2">
@@ -406,6 +418,10 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
               setCameraManagerInitialId(null);
             }}
           />
+        )}
+
+        {isBrowserCameraOpen && (
+          <BrowserCameraModal onClose={() => setIsBrowserCameraOpen(false)} />
         )}
 
         {expandedCamera && (
