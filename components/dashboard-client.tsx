@@ -7,7 +7,10 @@ import { AlertBanner } from "@/components/alert-banner";
 import { CameraCard } from "@/components/camera-card";
 import { CameraDetailModal } from "@/components/camera-detail-modal";
 import { CameraManager } from "@/components/camera-manager";
-import { BrowserCameraModal } from "@/components/browser-camera-modal";
+import {
+  BrowserCameraModal,
+  type BrowserCameraStream,
+} from "@/components/browser-camera-modal";
 import { EventFeed } from "@/components/event-feed";
 import { EventHistory } from "@/components/event-history";
 import { ReviewQueue } from "@/components/review-queue";
@@ -27,6 +30,10 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
     id?: string;
     name?: string;
   } | null>(null);
+  const [browserCameraStreams, setBrowserCameraStreams] = useState<
+    Record<string, BrowserCameraStream>
+  >({});
+  const browserCameraStreamsRef = useRef<Record<string, BrowserCameraStream>>({});
   const [cameraManagerInitialId, setCameraManagerInitialId] = useState<string | null>(null);
   const [expandedCameraId, setExpandedCameraId] = useState<string | null>(null);
   const [pendingEventUpdates, setPendingEventUpdates] = useState<
@@ -57,6 +64,39 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
   useEffect(() => {
     loadDashboardData();
   }, [loadDashboardData]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(browserCameraStreamsRef.current).forEach(({ stream }) =>
+        stream.getTracks().forEach((track) => track.stop()),
+      );
+    };
+  }, []);
+
+  const handleBrowserCameraConnected = useCallback(
+    (cameraId: string, connection: BrowserCameraStream) => {
+      setBrowserCameraStreams((current) => {
+        const previous = current[cameraId];
+        if (previous?.stream !== connection.stream) {
+          previous?.stream.getTracks().forEach((track) => track.stop());
+        }
+        const next = { ...current, [cameraId]: connection };
+        browserCameraStreamsRef.current = next;
+        return next;
+      });
+    },
+    [],
+  );
+
+  const handleBrowserCameraDisconnected = useCallback((cameraId: string) => {
+    setBrowserCameraStreams((current) => {
+      current[cameraId]?.stream.getTracks().forEach((track) => track.stop());
+      const next = { ...current };
+      delete next[cameraId];
+      browserCameraStreamsRef.current = next;
+      return next;
+    });
+  }, []);
 
   async function handleCreateEvent() {
     setIsCreatingEvent(true);
@@ -346,6 +386,7 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
                   <CameraCard
                     key={camera.id}
                     camera={camera}
+                    liveStream={browserCameraStreams[camera.id]?.stream}
                     onOpen={(selectedCamera) => setExpandedCameraId(selectedCamera.id)}
                     onConnect={(selectedCamera) =>
                       setBrowserCameraTarget({
@@ -431,8 +472,11 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
 
         {browserCameraTarget && (
           <BrowserCameraModal
-            cameraId={browserCameraTarget.id}
-            cameraName={browserCameraTarget.name}
+            cameras={cameras}
+            initialCameraId={browserCameraTarget.id}
+            activeStreams={browserCameraStreams}
+            onConnected={handleBrowserCameraConnected}
+            onDisconnected={handleBrowserCameraDisconnected}
             onClose={() => setBrowserCameraTarget(null)}
           />
         )}
@@ -440,6 +484,7 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
         {expandedCamera && (
           <CameraDetailModal
             camera={expandedCamera}
+            liveStream={browserCameraStreams[expandedCamera.id]?.stream}
             onEdit={(camera) => {
               setExpandedCameraId(null);
               setCameraManagerInitialId(camera.id);

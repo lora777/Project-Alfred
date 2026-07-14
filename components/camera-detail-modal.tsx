@@ -17,12 +17,14 @@ import { Button } from "@/components/ui/button";
 
 export function CameraDetailModal({
   camera,
+  liveStream,
   onEdit,
   onSnapshotCaptured,
   onDeleted,
   onClose,
 }: {
   camera: Camera;
+  liveStream?: MediaStream;
   onEdit: (camera: Camera) => void;
   onSnapshotCaptured: () => Promise<void>;
   onDeleted: () => Promise<void>;
@@ -205,7 +207,7 @@ export function CameraDetailModal({
           </div>
         </header>
 
-        <CameraFeedVisual camera={camera} expanded />
+        <CameraFeedVisual camera={camera} liveStream={liveStream} expanded />
 
         <div className="grid gap-4 border-t border-zinc-800 p-5 sm:grid-cols-4 sm:p-6">
           <div>

@@ -5,12 +5,15 @@ import { getCameraConnectionLabel } from "@/lib/camera-connection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { CameraStreamVideo } from "@/components/camera-stream-video";
 
 export function CameraFeedVisual({
   camera,
+  liveStream,
   expanded = false,
 }: {
   camera: Camera;
+  liveStream?: MediaStream;
   expanded?: boolean;
 }) {
   return (
@@ -31,7 +34,8 @@ export function CameraFeedVisual({
       <div
         className={`absolute rounded-full bg-zinc-800/20 blur-sm ${camera.feedVisual.activityRegion}`}
       />
-      {camera.snapshotAvailable && (
+      {liveStream && <CameraStreamVideo stream={liveStream} />}
+      {!liveStream && camera.snapshotAvailable && (
         <Image
           src={`/api/cameras/${encodeURIComponent(camera.id)}/snapshot/latest?capturedAt=${encodeURIComponent(camera.snapshotCapturedAt ?? "")}`}
           alt={`Latest snapshot from ${camera.name}`}
@@ -41,7 +45,7 @@ export function CameraFeedVisual({
           className="object-cover"
         />
       )}
-      {!camera.snapshotAvailable && (
+      {!liveStream && !camera.snapshotAvailable && (
       <div className="absolute inset-0 grid place-items-center">
         <div className="flex flex-col items-center gap-2 text-zinc-700 transition-colors group-hover:text-zinc-600">
           <Radio className={expanded ? "h-10 w-10" : "h-7 w-7"} strokeWidth={1} />
@@ -61,7 +65,7 @@ export function CameraFeedVisual({
       </div>
       <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between font-mono text-[9px] text-zinc-600">
         <span>{camera.currentTimeLabel}</span>
-        <span>{getCameraConnectionLabel(camera)}</span>
+        <span>{liveStream ? "Browser camera" : getCameraConnectionLabel(camera)}</span>
       </div>
     </div>
   );
@@ -69,14 +73,16 @@ export function CameraFeedVisual({
 
 export function CameraCard({
   camera,
+  liveStream,
   onOpen,
   onConnect,
 }: {
   camera: Camera;
+  liveStream?: MediaStream;
   onOpen: (camera: Camera) => void;
   onConnect: (camera: Camera) => void;
 }) {
-  const isOnline = camera.status === "online";
+  const isOnline = Boolean(liveStream) || camera.status === "online";
   const isThreat = camera.lastDetected.label.toLowerCase() === "coyote";
   const connectionAction = !camera.sourceConfigured
     ? "Choose source"
@@ -118,7 +124,7 @@ export function CameraCard({
         onClick={() => onOpen(camera)}
         aria-label={`Expand ${camera.name} live camera`}
       >
-        <CameraFeedVisual camera={camera} />
+        <CameraFeedVisual camera={camera} liveStream={liveStream} />
 
         <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-t border-zinc-800/80 px-4 py-4">
           <div>
