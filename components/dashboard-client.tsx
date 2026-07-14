@@ -23,7 +23,10 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
   const [error, setError] = useState<string | null>(null);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [isCameraManagerOpen, setIsCameraManagerOpen] = useState(false);
-  const [isBrowserCameraOpen, setIsBrowserCameraOpen] = useState(false);
+  const [browserCameraTarget, setBrowserCameraTarget] = useState<{
+    id?: string;
+    name?: string;
+  } | null>(null);
   const [cameraManagerInitialId, setCameraManagerInitialId] = useState<string | null>(null);
   const [expandedCameraId, setExpandedCameraId] = useState<string | null>(null);
   const [pendingEventUpdates, setPendingEventUpdates] = useState<
@@ -318,7 +321,7 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
                     <Button
                       type="button"
                       size="sm"
-                      onClick={() => setIsBrowserCameraOpen(true)}
+                      onClick={() => setBrowserCameraTarget({})}
                     >
                       <Camera className="mr-2 h-3.5 w-3.5" />
                       Connect camera
@@ -344,6 +347,12 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
                     key={camera.id}
                     camera={camera}
                     onOpen={(selectedCamera) => setExpandedCameraId(selectedCamera.id)}
+                    onConnect={(selectedCamera) =>
+                      setBrowserCameraTarget({
+                        id: selectedCamera.id,
+                        name: selectedCamera.name,
+                      })
+                    }
                   />
                 ))}
               </div>
@@ -420,8 +429,12 @@ export function DashboardClient({ view = "live" }: { view?: DashboardView }) {
           />
         )}
 
-        {isBrowserCameraOpen && (
-          <BrowserCameraModal onClose={() => setIsBrowserCameraOpen(false)} />
+        {browserCameraTarget && (
+          <BrowserCameraModal
+            cameraId={browserCameraTarget.id}
+            cameraName={browserCameraTarget.name}
+            onClose={() => setBrowserCameraTarget(null)}
+          />
         )}
 
         {expandedCamera && (

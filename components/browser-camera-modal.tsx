@@ -6,7 +6,15 @@ import { Button } from "@/components/ui/button";
 
 type ConnectionState = "idle" | "connecting" | "live" | "error";
 
-export function BrowserCameraModal({ onClose }: { onClose: () => void }) {
+export function BrowserCameraModal({
+  cameraId,
+  cameraName,
+  onClose,
+}: {
+  cameraId?: string;
+  cameraName?: string;
+  onClose: () => void;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
@@ -63,7 +71,10 @@ export function BrowserCameraModal({ onClose }: { onClose: () => void }) {
         const activeDeviceId =
           stream.getVideoTracks()[0]?.getSettings().deviceId || selectedDeviceId;
         setDeviceId(activeDeviceId);
-        localStorage.setItem("alfred-browser-camera", activeDeviceId);
+        localStorage.setItem(
+          cameraId ? `alfred-browser-camera-${cameraId}` : "alfred-browser-camera",
+          activeDeviceId,
+        );
         await refreshDevices();
         setConnectionState("live");
       } catch (reason) {
@@ -78,11 +89,15 @@ export function BrowserCameraModal({ onClose }: { onClose: () => void }) {
         setConnectionState("error");
       }
     },
-    [deviceId, refreshDevices, stopStream],
+    [cameraId, deviceId, refreshDevices, stopStream],
   );
 
   useEffect(() => {
-    setDeviceId(localStorage.getItem("alfred-browser-camera") || "");
+    setDeviceId(
+      localStorage.getItem(
+        cameraId ? `alfred-browser-camera-${cameraId}` : "alfred-browser-camera",
+      ) || "",
+    );
     void refreshDevices();
 
     const handleDeviceChange = () => void refreshDevices();
@@ -91,7 +106,7 @@ export function BrowserCameraModal({ onClose }: { onClose: () => void }) {
       navigator.mediaDevices?.removeEventListener("devicechange", handleDeviceChange);
       stopStream();
     };
-  }, [refreshDevices, stopStream]);
+  }, [cameraId, refreshDevices, stopStream]);
 
   const selectDevice = (nextDeviceId: string) => {
     setDeviceId(nextDeviceId);
@@ -115,7 +130,7 @@ export function BrowserCameraModal({ onClose }: { onClose: () => void }) {
               Local video source
             </p>
             <h2 id="browser-camera-title" className="mt-1 text-lg font-semibold text-zinc-100">
-              Connect iPhone or webcam
+              {cameraName ? `Reconnect ${cameraName}` : "Connect iPhone or webcam"}
             </h2>
             <p className="mt-1 text-xs text-zinc-500">
               Start Camo on the iPhone and PC, then select Camo Camera below.

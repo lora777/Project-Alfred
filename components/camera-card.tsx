@@ -3,6 +3,7 @@ import Image from "next/image";
 import type { Camera } from "@/data/mock-data";
 import { getCameraConnectionLabel } from "@/lib/camera-connection";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export function CameraFeedVisual({
@@ -69,21 +70,22 @@ export function CameraFeedVisual({
 export function CameraCard({
   camera,
   onOpen,
+  onConnect,
 }: {
   camera: Camera;
   onOpen: (camera: Camera) => void;
+  onConnect: (camera: Camera) => void;
 }) {
   const isOnline = camera.status === "online";
   const isThreat = camera.lastDetected.label.toLowerCase() === "coyote";
+  const connectionAction = !camera.sourceConfigured
+    ? "Choose source"
+    : !isOnline
+      ? "Reconnect"
+      : null;
 
   return (
-    <button
-      type="button"
-      className="group block w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-      onClick={() => onOpen(camera)}
-      aria-label={`Expand ${camera.name} live camera`}
-    >
-    <Card className="overflow-hidden transition-colors group-hover:border-zinc-700">
+    <Card className="group overflow-hidden transition-colors hover:border-zinc-700">
       <div className="flex items-center justify-between border-b border-zinc-800/80 px-4 py-3">
         <div>
           <div className="flex items-center gap-2">
@@ -110,34 +112,52 @@ export function CameraCard({
         </Badge>
       </div>
 
-      <CameraFeedVisual camera={camera} />
+      <button
+        type="button"
+        className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500"
+        onClick={() => onOpen(camera)}
+        aria-label={`Expand ${camera.name} live camera`}
+      >
+        <CameraFeedVisual camera={camera} />
 
-      <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-t border-zinc-800/80 px-4 py-4">
-        <div>
-          <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-600">
-            Last detected
-          </p>
-          <div className="mt-1.5 flex items-center gap-2">
-            <span
-              className={`text-sm font-semibold capitalize ${
-                isThreat ? "text-red-400" : "text-zinc-200"
-              }`}
-            >
-              {camera.lastDetected.label}
-            </span>
-            <span className="font-mono text-[10px] text-zinc-600">
-              {camera.lastDetected.confidence.toFixed(1)}% confidence
-            </span>
+        <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-t border-zinc-800/80 px-4 py-4">
+          <div>
+            <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-600">
+              Last detected
+            </p>
+            <div className="mt-1.5 flex items-center gap-2">
+              <span
+                className={`text-sm font-semibold capitalize ${
+                  isThreat ? "text-red-400" : "text-zinc-200"
+                }`}
+              >
+                {camera.lastDetected.label}
+              </span>
+              <span className="font-mono text-[10px] text-zinc-600">
+                {camera.lastDetected.confidence.toFixed(1)}% confidence
+              </span>
+            </div>
           </div>
+          <p className="max-w-[90px] text-right font-mono text-[9px] leading-4 text-zinc-600">
+            <span className="mb-1 flex items-center justify-end gap-1 text-zinc-500">
+              <Maximize2 className="h-3 w-3" /> Expand
+            </span>
+            {camera.lastDetected.timestampLabel}
+          </p>
         </div>
-        <p className="max-w-[90px] text-right font-mono text-[9px] leading-4 text-zinc-600">
-          <span className="mb-1 flex items-center justify-end gap-1 text-zinc-500">
-            <Maximize2 className="h-3 w-3" /> Expand
-          </span>
-          {camera.lastDetected.timestampLabel}
-        </p>
-      </div>
+      </button>
+
+      {connectionAction && (
+        <div className="flex items-center justify-between border-t border-zinc-800/80 bg-zinc-950/60 px-4 py-3">
+          <p className="font-mono text-[9px] uppercase tracking-wider text-zinc-600">
+            {camera.sourceConfigured ? "Camera connection lost" : "No video source configured"}
+          </p>
+          <Button type="button" variant="outline" size="sm" onClick={() => onConnect(camera)}>
+            <CameraIcon className="mr-2 h-3.5 w-3.5" />
+            {connectionAction}
+          </Button>
+        </div>
+      )}
     </Card>
-    </button>
   );
 }
